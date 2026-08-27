@@ -5,7 +5,6 @@ on:
   push:
     paths:
       - ".github/workflows/materialize-jpegs.yml"
-      - "images/**"
 
 permissions:
   contents: write
@@ -19,37 +18,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p images
-          curl -fsSL -A "Mozilla/5.0" -L -o images/slice.jpg \
-            "https://images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          curl -fsSL -A "Mozilla/5.0" -L -o images/board.jpg \
-            "https://images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          shopt -s nullglob
-          spice_parts=(images/spices.jpg.b64.*)
-          if [ ${#spice_parts[@]} -gt 0 ]; then
-            cat "${spice_parts[@]}" | tr -d '\n' | base64 -d > images/spices.jpg
-            rm -f "${spice_parts[@]}"
-          elif [ -f images/spices.jpg.b64 ]; then
-            base64 -d images/spices.jpg.b64 > images/spices.jpg
-            rm -f images/spices.jpg.b64
-          fi
-          python3 -c 'from pathlib import Path
-need = ["slice", "board"]
-for n in need:
-    p = Path("images") / (n + ".jpg")
-    b = p.read_bytes()
-    assert b[:3] == bytes([255, 216, 255]), (n, b[:8])
-    print(n, "ok", len(b))
-sp = Path("images/spices.jpg")
-if sp.exists():
-    b = sp.read_bytes()
-    assert b[:3] == bytes([255, 216, 255]), b[:8]
-    print("spices ok", len(b))
-'
+          curl -fsSL -A "Mozilla/5.0" -L -o images/slice.jpg "https://images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          curl -fsSL -A "Mozilla/5.0" -L -o images/board.jpg "https://images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          python3 -c "from pathlib import Path\nfor n in ['slice','board']:\n b=(Path('images')/(n+'.jpg')).read_bytes()\n assert b[:3]==bytes([255,216,255]), n\n print(n, 'ok', len(b))"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add images/slice.jpg images/board.jpg
-          if [ -f images/spices.jpg ]; then git add images/spices.jpg; fi
-          git add -u -- images || true
           if git diff --cached --quiet; then
             echo no jpeg changes
             exit 0

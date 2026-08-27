@@ -14,15 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download and commit JPEGs
+      - name: Add spices JPEG and remove debug report
         run: |
           mkdir -p images
-          curl -L -A Mozilla/5.0 -o images/slice.jpg https://images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg
-          curl -L -A Mozilla/5.0 -o images/board.jpg https://images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg
-          ls -l images > report.txt
-          python3 -c "from pathlib import Path; print('slice', Path('images/slice.jpg').stat().st_size, Path('images/slice.jpg').read_bytes()[:8]); print('board', Path('images/board.jpg').stat().st_size, Path('images/board.jpg').read_bytes()[:8])" >> report.txt
+          curl -L -A Mozilla/5.0 -o images/spices.jpg https://images.pexels.com/photos/678414/pexels-photo-678414.jpeg
+          python3 -c "from pathlib import Path; b=Path('images/spices.jpg').read_bytes(); print('spices', len(b), b[:4]); assert b[:3]==bytes([255,216,255])"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add images report.txt
-          git commit -m "Add real sausage photos"
+          git add images/spices.jpg
+          if [ -f report.txt ]; then git rm -f report.txt; fi
+          git commit -m "Add real spices photo and drop debug report"
           git push

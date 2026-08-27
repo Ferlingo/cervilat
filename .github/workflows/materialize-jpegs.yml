@@ -1,0 +1,42 @@
+name: Materialize JPEGs
+
+on:
+  push:
+    paths:
+      - "images/**.b64"
+      - ".github/workflows/materialize-jpegs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode base64 JPEGs and remove payloads
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for f in images/*.jpg.b64; do
+            out="${f%.b64}"
+            base64 -d "$f" > "$out"
+            python3 - <<PY
+from pathlib import Path
+p=Path("$out")
+b=p.read_bytes()
+assert b[:3]==b"\xff\xd8\xff", (p, b[:8])
+print(p, 'ok', len(b))
+PY
+            rm -f "$f"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'no jpeg changes'
+            exit 0
+          fi
+          git commit -m "Add real sausage photos"
+          git push

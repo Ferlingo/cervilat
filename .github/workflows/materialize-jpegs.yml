@@ -3,7 +3,7 @@ name: Materialize JPEGs
 on:
   push:
     paths:
-      - "images/**.b64"
+      - "images/**"
       - ".github/workflows/materialize-jpegs.yml"
   workflow_dispatch:
 
@@ -19,17 +19,28 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          for f in images/*.jpg.b64; do
-            out="${f%.b64}"
-            base64 -d "$f" > "$out"
-            python3 - <<PY
+          decoded=0
+          for name in slice board spices; do
+            parts=(images/${name}.jpg.b64.*)
+            single=(images/${name}.jpg.b64)
+            if [ ${#parts[@]} -gt 0 ]; then
+              cat "${parts[@]}" | tr -d '\n' | base64 -d > "images/${name}.jpg"
+              rm -f "${parts[@]}"
+              decoded=1
+            elif [ ${#single[@]} -gt 0 ] && [ -f "${single[0]}" ]; then
+              base64 -d "${single[0]}" > "images/${name}.jpg"
+              rm -f "${single[0]}"
+              decoded=1
+            fi
+            if [ -f "images/${name}.jpg" ]; then
+              python3 - <<PY
 from pathlib import Path
-p=Path("$out")
+p=Path("images/${name}.jpg")
 b=p.read_bytes()
 assert b[:3]==b"\xff\xd8\xff", (p, b[:8])
 print(p, 'ok', len(b))
 PY
-            rm -f "$f"
+            fi
           done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

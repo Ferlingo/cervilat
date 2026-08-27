@@ -1,0 +1,5 @@
+total 3048
+-rw-r--r-- 1 runner runner 1405418 Aug 27 16:09 board.jpg
+-rw-r--r-- 1 runner runner 1709058 Aug 27 16:09 slice.jpg
+slice 1709058 b'\xff\xd8\xff\xe1\x00\x80Ex'
+board 1405418 b'\xff\xd8\xff\xe1\x00\x80Ex'

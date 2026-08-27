@@ -13,7 +13,7 @@ html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
-  background: radial-gradient(1200px 600px at 10% -10%, #2a2018 0%, var(--bg) 55%);
+  background: var(--bg);
   color: var(--cream);
   font-family: Figtree, system-ui, sans-serif;
   font-size: 18px;
@@ -36,6 +36,11 @@ body {
 }
 
 .top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -58,7 +63,34 @@ body {
 }
 
 .hero {
-  padding: 14vh 8vw 10vh;
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: flex-end;
+  max-width: none;
+  padding: 0;
+  overflow: hidden;
+}
+.hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% 48%;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(20,17,14,.88) 0%, rgba(20,17,14,.5) 48%, rgba(20,17,14,.18) 100%),
+    linear-gradient(to top, rgba(20,17,14,.7) 0%, transparent 42%);
+}
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  padding: 18vh 8vw 10vh;
   max-width: 18em;
 }
 
@@ -100,23 +132,40 @@ h1 {
 .btn:hover { background: var(--cream); }
 
 .block {
-  padding: 0 8vw 8vh;
-  max-width: 40em;
+  padding: 8vh 8vw;
   border-top: 1px solid var(--line);
-  margin: 0 8vw;
-  padding-top: 7vh;
 }
 
 h2 {
   font-family: Fraunces, Georgia, serif;
   font-size: 28px;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0 0 16px;
 }
 
 .block p { margin: 0 0 14px; color: var(--muted); }
 .block p:last-child { margin-bottom: 0; }
 
+.split {
+  display: grid;
+  grid-template-columns: minmax(16em, 1fr) minmax(18em, 1.15fr);
+  gap: 48px;
+  align-items: center;
+  max-width: none;
+}
+.split.reverse { grid-template-columns: minmax(18em, 1.15fr) minmax(16em, 1fr); }
+.split.reverse > div { order: 2; }
+.split.reverse > figure { order: 1; }
+.split figure { margin: 0; }
+.split img {
+  display: block;
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.contact { max-width: 40em; }
 .contact a {
   color: var(--cream);
   font-size: 22px;
@@ -135,11 +184,15 @@ footer {
   gap: 16px;
   flex-wrap: wrap;
   border-top: 1px solid var(--line);
-  margin-top: 4vh;
 }
 footer p { margin: 0; }
 
-@media (max-width: 640px) {
-  .hero { padding-top: 10vh; max-width: none; }
-  .block { margin: 0; padding-left: 8vw; padding-right: 8vw; }
+@media (max-width: 800px) {
+  .hero { min-height: 78vh; }
+  .hero-copy { padding-top: 16vh; max-width: none; }
+  .split, .split.reverse {
+    grid-template-columns: 1fr;
+  }
+  .split.reverse > div, .split.reverse > figure { order: unset; }
+  .split img { height: 280px; }
 }

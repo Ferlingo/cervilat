@@ -8,30 +8,28 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   photos:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download real Pexels JPEGs and commit
+      - name: Download real Pexels JPEGs
         run: |
-          set -euxo pipefail
+          set -x
           mkdir -p images
-          curl -fL --retry 5 --retry-all-errors -A "Mozilla/5.0" \
-            -o images/slice.jpg \
-            "https://wsrv.nl/?url=images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg&w=1600&output=jpg"
-          curl -fL --retry 5 --retry-all-errors -A "Mozilla/5.0" \
-            -o images/board.jpg \
-            "https://wsrv.nl/?url=images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg&w=1600&output=jpg"
-          ls -l images/slice.jpg images/board.jpg
-          python3 -c "from pathlib import Path;\n[print(n, Path('images/'+n+'.jpg').stat().st_size, Path('images/'+n+'.jpg').read_bytes()[:3]) or (_ for _ in ()).throw(Exception(n)) if Path('images/'+n+'.jpg').read_bytes()[:3]!=bytes([255,216,255]) else None for n in ['slice','board']]"
+          echo start > /tmp/report.txt
+          curl -sS -L -A Mozilla/5.0 -w "slice_pexels %{http_code} %{size_download}\n" -o images/slice.jpg "https://images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg?auto=compress&cs=tinysrgb&w=1600" >> /tmp/report.txt 2>&1 || echo pexels_slice_fail >> /tmp/report.txt
+          curl -sS -L -A Mozilla/5.0 -w "board_pexels %{http_code} %{size_download}\n" -o images/board.jpg "https://images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg?auto=compress&cs=tinysrgb&w=1600" >> /tmp/report.txt 2>&1 || echo pexels_board_fail >> /tmp/report.txt
+          curl -sS -L -A Mozilla/5.0 -w "slice_wsrv %{http_code} %{size_download}\n" -o images/slice2.jpg "https://wsrv.nl/?url=images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg&w=1600&output=jpg" >> /tmp/report.txt 2>&1 || echo wsrv_slice_fail >> /tmp/report.txt
+          ls -l images >> /tmp/report.txt 2>&1 || true
+          python3 -c "from pathlib import Path; import os; print('files', os.listdir('images'));\n[print(p, p.stat().st_size, p.read_bytes()[:4]) for p in Path('images').glob('*')]" >> /tmp/report.txt 2>&1 || echo pyfail >> /tmp/report.txt
+          cat /tmp/report.txt
+          gh issue create --title "jpeg-download-debug" --body-file /tmp/report.txt
+          python3 -c "from pathlib import Path; b=Path('images/slice.jpg').read_bytes(); assert b[:3]==bytes([255,216,255]); b=Path('images/board.jpg').read_bytes(); assert b[:3]==bytes([255,216,255])"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add images/slice.jpg images/board.jpg
-          if git diff --cached --quiet; then
-            echo no jpeg changes
-            exit 0
-          fi
           git commit -m "Add real sausage photos"
           git push

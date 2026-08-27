@@ -1,52 +1,57 @@
-name: Materialize JPEGs
+name: Add real sausage photos
 
 on:
+  workflow_dispatch:
   push:
     paths:
-      - "images/**"
       - ".github/workflows/materialize-jpegs.yml"
-  workflow_dispatch:
+      - "images/**"
 
 permissions:
   contents: write
 
 jobs:
-  decode:
+  photos:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode base64 JPEGs and remove payloads
+      - name: Download real Pexels JPEGs and commit
         run: |
           set -euo pipefail
+          mkdir -p images
+          curl -fsSL -A "Mozilla/5.0" -L -o images/slice.jpg \
+            "https://images.pexels.com/photos/5627444/pexels-photo-5627444.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          curl -fsSL -A "Mozilla/5.0" -L -o images/board.jpg \
+            "https://images.pexels.com/photos/5627443/pexels-photo-5627443.jpeg?auto=compress&cs=tinysrgb&w=1600"
           shopt -s nullglob
-          decoded=0
-          for name in slice board spices; do
-            parts=(images/${name}.jpg.b64.*)
-            single=(images/${name}.jpg.b64)
-            if [ ${#parts[@]} -gt 0 ]; then
-              cat "${parts[@]}" | tr -d '\n' | base64 -d > "images/${name}.jpg"
-              rm -f "${parts[@]}"
-              decoded=1
-            elif [ ${#single[@]} -gt 0 ] && [ -f "${single[0]}" ]; then
-              base64 -d "${single[0]}" > "images/${name}.jpg"
-              rm -f "${single[0]}"
-              decoded=1
-            fi
-            if [ -f "images/${name}.jpg" ]; then
-              python3 - <<PY
-from pathlib import Path
-p=Path("images/${name}.jpg")
-b=p.read_bytes()
-assert b[:3]==b"\xff\xd8\xff", (p, b[:8])
-print(p, 'ok', len(b))
-PY
-            fi
-          done
+          spice_parts=(images/spices.jpg.b64.*)
+          if [ ${#spice_parts[@]} -gt 0 ]; then
+            cat "${spice_parts[@]}" | tr -d '\n' | base64 -d > images/spices.jpg
+            rm -f "${spice_parts[@]}"
+          elif [ -f images/spices.jpg.b64 ]; then
+            base64 -d images/spices.jpg.b64 > images/spices.jpg
+            rm -f images/spices.jpg.b64
+          fi
+          python3 -c 'from pathlib import Path
+need = ["slice", "board"]
+for n in need:
+    p = Path("images") / (n + ".jpg")
+    b = p.read_bytes()
+    assert b[:3] == bytes([255, 216, 255]), (n, b[:8])
+    print(n, "ok", len(b))
+sp = Path("images/spices.jpg")
+if sp.exists():
+    b = sp.read_bytes()
+    assert b[:3] == bytes([255, 216, 255]), b[:8]
+    print("spices ok", len(b))
+'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add images/slice.jpg images/board.jpg
+          if [ -f images/spices.jpg ]; then git add images/spices.jpg; fi
+          git add -u -- images || true
           if git diff --cached --quiet; then
-            echo 'no jpeg changes'
+            echo no jpeg changes
             exit 0
           fi
           git commit -m "Add real sausage photos"
